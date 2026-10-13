@@ -3,10 +3,16 @@
 This article contains all information for users to understand their NixOs systems.
 To keep it consice, some familiarity with linux is assumed.
 If you already have NixOS installed, we encourage you to follow along with the commands presented here.
+Keep in mind the results you will get from running commands on your machine will differ from the ones on the page.
 
 ## Acronyms
 
 - (FHS) Filesystem Hierarchy Standard [^fhs]
+
+## Concepts
+- Nix Store: Folder where all packages are installed on Nix OS, located at `nix/store`
+- Derivation: Specification on how to build something
+- Generation: A snapshot of your running system
 
 ## Diferences between Nix OS and a "regular" distro
 
@@ -24,7 +30,7 @@ The table below gives a quick overview of the differences between Nix OS and
 ## The Nix Store
 Any time you install a package (via `nixos-rebuild` or `nix-shell`), everything is added to `nix/store`.
 
-As an example, here I am listing all versions that I have on my system from the [mmb](https://codeberg.org/djrm/mmb) package (installed via `nix-shell`):
+As an example, here I am listing all versions from the [mmb](https://codeberg.org/djrm/mmb) package on my system (installed via `nix-shell`):
 
 ```sh
 ❯ ls /nix/store | grep -E '^[a-z0-9]{32}-mmb-[0-9]'
@@ -45,26 +51,42 @@ p3pibv1gf4msnbph6kvj2whymyy67ghz-mmb-0.2.0.0.drv
 qzv483jpxfnwhhzhsqcsfp5klr494blx-mmb-0.6.1.0.drv
 ```
 
-All paths in there start with an hash, which is computed out of all the dependencies that are using to build it.
-I can then run my package
+All paths start with an hash, which is computed out of all the dependencies that are using to a particular package.[^hash].
+
+We can see that we have files with and without the `.drv` extention.
+`.drv` files contain the instructions to build a particular derivation[^drv].
+Files without `.drv` are the result of building a derivation.
+
+```sh
+❯ ^ls /nix/store/n6s59pj8yi03is1vi6dz3az64plpn7lj-mmb-0.2.0.0
+bin  lib  nix-support
+```
+
+We can run any package on the nix store
 
 ```sh
 ❯ /nix/store/5dmgcvl5075yi87xv64zamjiprq1fjnp-mmb-0.6.4.0/bin/mmb --help
 mmb - a static blog generator
 ```
 
-## Which packages is my current system using
+It would get very tiring having to type the full path anytime you want to run a program.
+Fortunately, you don't have to, as we will see in the following section.
 
-The latest section may bring up a question: "So how do I know which version is my current system using"
+## Which package versions is my current system using
 
-Let's see where our `ls` comes from
+The latest section brings up a few questions:
+
+- How can I run commands without typing the full store path?
+- Which version of a package is my current system using?
+
+To answer this, let's take a look at where `ls` comes from
 
 ```sh
 > which ls
 /run/current-system/sw/bin/ls
 ```
 
-This does not point to the `nix/store`, however `/run/current-system/sw/bin/ls` is just a symlink that point to the store
+This does not point to the `nix/store`, however `/run/current-system/sw/bin/ls` is just a symlink that points to the store
 
 ```sh
 ❯ ls -al /run/current-system/sw/bin | grep " ls "
@@ -82,11 +104,49 @@ The `/run` folder is a temporary filesystem written in RAM that does not survive
 While it's not a NixOS specific concept, it serves a very important purpose: It describes all the software that is running on the current system `/run/current-system` and how the system was booted `/run/booted-system`.
 The current system and booted system nix store paths should match right after reboot, but become different after the first switch.
 
+Nix Os uses the `/run/sw/`  folder to store all the packages for the current env.
+
+```sh
+❯ ^ls /run/current-system/sw/
+bin  etc  lib  sbin  share
+```
+`/run/current-system/sw/` contains folders that you would expect on your root filesystem on a Linux Distro. But how is this set?
+
 ## Profiles, Users and Generations
+From the previous section we learned that at boot the  `/run/current-system/sw/` folder is symlinked, and this defined what packages we have available in our current session.
+But how does this happen?
 
-Anytime you run
+When the system boots, the bootloader selects a generation, and that generation is symlinked into `/run/current-system/sw/`.
+Now, what is a generation? Before we get there, we need to learn about profiles.
 
-## Deleting unused packages
+A profile is a collection of activated packages for a given user.
+
+Let's start by taking a look at `/nix/var/nix/profiles`
+
+```sh
+❯ ls  /nix/var/nix/profiles
+default -> /nix/var/nix/profiles/per-user/root/profile
+per-user
+system -> system-21-link
+system-17-link -> /nix/store/3w1xp7387mywl1kkplcscg8bncnnxllg-nixos-system-nixos-26.11pre1075591.e554fab72f81
+system-18-link -> /nix/store/lxpycjgcrzmw2k7xx46703pfbaqvqv91-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-19-link -> /nix/store/2cjic09qwy9zanyg2ivvqjaf4g3s15rc-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-20-link -> /nix/store/x9s6ghn6xcvn8v6rd45ab9djjmcjhgl2-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-21-link -> /nix/store/r6sshn490la8a55qyxqrfanrsmcl91jv-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+```
+
+A few interesting things here. We have a default folder, that symlinks to `per-user/root/profile` which itself symlinks to `nix/store`
+
+```sh
+❯ ls  /nix/var/nix/profiles/per-user/root
+channels -> channels-9-link
+channels-8-link -> /nix/store/v1ibrr8f5z6a8wrw27a6s2g23g8n7cr0-user-environment
+channels-9-link -> /nix/store/akx35ch27g21zm5k0yvghwgkz7vs7m0w-user-environment
+```
+
+The default folder
+
+## Package deletion
 
 ## What does `nixos-rebuild` do?
 
@@ -101,3 +161,4 @@ Anytime you run
 
 [^fhs]: https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard
 [^hash]: https://nixos.org/guides/how-nix-works/
+[^drv]: https://nixos.org/guides/nix-pills/06-our-first-derivation.html#digression-about-drv-files
