@@ -11,7 +11,7 @@ Keep in mind the results you will get from running commands on your machine will
 
 ## Concepts
 - Nix Store: Folder where all packages are installed on Nix OS, located at `nix/store`
-- Derivation: Specification on how to build something
+- Derivation: Specification on how to build a package
 - Generation: A snapshot of your running system
 
 ## Diferences between Nix OS and a "regular" distro
@@ -145,6 +145,29 @@ channels-9-link -> /nix/store/akx35ch27g21zm5k0yvghwgkz7vs7m0w-user-environment
 ```
 
 The default folder
+
+```sh
+❯ ls /nix/var/nix/profiles 
+default -> /nix/var/nix/profiles/per-user/root/profile
+per-user
+system -> system-22-link
+system-17-link -> /nix/store/3w1xp7387mywl1kkplcscg8bncnnxllg-nixos-system-nixos-26.11pre1075591.e554fab72f81
+system-18-link -> /nix/store/lxpycjgcrzmw2k7xx46703pfbaqvqv91-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-19-link -> /nix/store/2cjic09qwy9zanyg2ivvqjaf4g3s15rc-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-20-link -> /nix/store/x9s6ghn6xcvn8v6rd45ab9djjmcjhgl2-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-21-link -> /nix/store/r6sshn490la8a55qyxqrfanrsmcl91jv-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+system-22-link -> /nix/store/svjpwfiqik42g7r14aiwk0ja8q16r3ch-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+```
+
+```sh
+❯ readlink -f /run/current-system
+readlink -f /nix/var/nix/profiles/system
+readlink -f /run/booted-system
+
+/nix/store/svjpwfiqik42g7r14aiwk0ja8q16r3ch-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+/nix/store/svjpwfiqik42g7r14aiwk0ja8q16r3ch-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+/nix/store/x9s6ghn6xcvn8v6rd45ab9djjmcjhgl2-nixos-system-nixos-26.11pre1087755.e7439b6b14ad
+```
 
 ## Package deletion
 
